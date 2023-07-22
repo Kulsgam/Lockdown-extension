@@ -10,47 +10,43 @@
   const data = await response.json();
   allowedDomains = data.allowed_domains;
 
+  function closeTab(tabId) {
+    chrome.tabs.remove(tabId, function () {
+      if (chrome.runtime.lastError); // to get rid of error message
+    });
+  }
+
+
   chrome.storage.onChanged.addListener(function (changes, namespace) {
     if (namespace === "sync" && "enabled" in changes) {
       isEnabled = changes.enabled.newValue;
+      if (isEnabled) {
+        chrome.tabs.query({}, function (tabs) {
+          for (let tab of tabs) {
+            if (!tab.url) continue;
+            if (tab.url.startsWith("chrome-extension://") || tab.url.startsWith("chrome://") || !isEnabled)
+              continue;
+            let url = new URL(tab.url);
+            if (url.hostname in allowedDomains) continue;
+            closeTab(tab.id);
+          }
+        });
+      }
     }
   });
 
   chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (!changeInfo.url) return;
-    if (changeInfo.url.startsWith("chrome-extension://") || changeInfo.url.startsWith("chrome://") || !isEnabled)
+    if (!tab.url) return;
+    if (tab.url.startsWith("chrome-extension://") || tab.url.startsWith("chrome://") || !isEnabled)
       return;
-    console.log(changeInfo.url);
-    let url = new URL(changeInfo.url);
+    let url = new URL(tab.url);
     for (let i = 0; i < allowedDomains.length; i++) {
       if (url.hostname === allowedDomains[i]) {
         return;
       }
     }
-
-    chrome.tabs.remove(tabId);
+    closeTab(tabId);
   });
-
-  // chrome.webRequest.onBeforeRequest.addListener(
-  //   async function (details) {
-  //     if (details.url.startsWith("chrome-extension://") || !isEnabled)
-  //       return { cancel: false };
-  //     if (details.tabId === -1)
-  //       return { cancel: true };
-
-  //     let tabObj = await getTabInfo(details.tabId);
-
-  //     let url = new URL(tabObj.url);
-  //     for (let i = 0; i < allowedDomains.length; i++) {
-  //       console.log(url.hostname);
-  //       console.log(allowedDomains[i]);
-  //       if (url.hostname === allowedDomains[i]) {
-  //         return { cancel: false };
-  //       }
-  //     }
-  //     return { cancel: true };
-  //   },
-  //   { urls: ["<all_urls>"] },
-  //   ["blocking"]
-  // );
 })();
+
+// TODO: add domain name checking
