@@ -8,6 +8,7 @@
     "storage",
     "webRequest",
     "webRequestBlocking",
+    "webNavigation",
     "<all_urls>"
   ],
   "browser_action": {
