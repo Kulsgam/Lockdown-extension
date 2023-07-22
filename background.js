@@ -35,10 +35,3 @@
     ["blocking"]
   );
 }) ();
-
-// // will log in background console, not normal console. Go to extensions, click on details, inspect background view
-// chrome.tabs.query({}, function(tabs) {
-//   for(var i = 0; i < tabs.length; i++) {
-//       console.log(tabs[i].url);
-//   }
-// });
