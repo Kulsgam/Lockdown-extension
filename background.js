@@ -16,44 +16,41 @@
     }
   });
 
-  function getTabInfo(tabId) {
-    return new Promise((resolve, reject) => {
-      chrome.tabs.get(tabId, function(tab) {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-        } else {
-          resolve(tab);
-        }
-      });
-    });
-  }
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (!changeInfo.url) return;
+    if (changeInfo.url.startsWith("chrome-extension://") || changeInfo.url.startsWith("chrome://") || !isEnabled)
+      return;
+    console.log(changeInfo.url);
+    let url = new URL(changeInfo.url);
+    for (let i = 0; i < allowedDomains.length; i++) {
+      if (url.hostname === allowedDomains[i]) {
+        return;
+      }
+    }
 
-  chrome.webRequest.onBeforeRequest.addListener(
-    function (details) {
-      return new Promise((resolve, reject) => {
-        if (details.url.startsWith("chrome-extension://") || !isEnabled) {
-          resolve({ cancel: false });
-        } else if (details.tabId === -1) {
-          resolve({ cancel: true });
-        } else {
-          getTabInfo(details.tabId).then(tabObj => {
-            let url = new URL(tabObj.url);
-            for (let i = 0; i < allowedDomains.length; i++) {
-              console.log(url.hostname);
-              console.log(allowedDomains[i]);
-              if (url.hostname === allowedDomains[i]) {
-                resolve({ cancel: false });
-              }
-            }
-            resolve({ cancel: true });
-          }).catch(error => {
-            console.error("An error occurred:", error);
-            resolve({ cancel: true });
-          });
-        }
-      });
-    },
-    { urls: ["<all_urls>"] },
-    ["blocking"]
-  );
+    chrome.tabs.remove(tabId);
+  });
+
+  // chrome.webRequest.onBeforeRequest.addListener(
+  //   async function (details) {
+  //     if (details.url.startsWith("chrome-extension://") || !isEnabled)
+  //       return { cancel: false };
+  //     if (details.tabId === -1)
+  //       return { cancel: true };
+
+  //     let tabObj = await getTabInfo(details.tabId);
+
+  //     let url = new URL(tabObj.url);
+  //     for (let i = 0; i < allowedDomains.length; i++) {
+  //       console.log(url.hostname);
+  //       console.log(allowedDomains[i]);
+  //       if (url.hostname === allowedDomains[i]) {
+  //         return { cancel: false };
+  //       }
+  //     }
+  //     return { cancel: true };
+  //   },
+  //   { urls: ["<all_urls>"] },
+  //   ["blocking"]
+  // );
 })();
