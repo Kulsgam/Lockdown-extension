@@ -15,8 +15,7 @@
       if (chrome.runtime.lastError); // to get rid of error message
     });
   }
-
-
+  
   chrome.storage.onChanged.addListener(function (changes, namespace) {
     if (namespace === "sync" && "enabled" in changes) {
       isEnabled = changes.enabled.newValue;
@@ -27,7 +26,7 @@
             if (tab.url.startsWith("chrome-extension://") || tab.url.startsWith("chrome://") || !isEnabled)
               continue;
             let url = new URL(tab.url);
-            if (url.hostname in allowedDomains) continue;
+            if (allowedDomains.includes(url.hostname)) continue;
             closeTab(tab.id);
           }
         });
